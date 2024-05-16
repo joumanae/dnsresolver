@@ -7,6 +7,9 @@ import (
 	"math/rand"
 )
 
+const TYPE_A = 1
+const CLASS_IN = 1
+
 type DNSHeader struct {
 	ID                  uint16
 	Flags               uint16
@@ -24,10 +27,6 @@ type DNSQuestion struct {
 	Class uint16
 }
 
-// QUESTION: The Python
-// Why does go not Use hexadecimal formating? Python has a more human-redable representation of binary data. It makes it easier
-// to understand at a glance.
-// On the other hand, Go's approach is more conside and avoid the need for additional formatting or interpretation.
 func (h *DNSHeader) HeaderToBytes(size int) string {
 	headerSlice := make([]byte, DNSHeaderSize)
 	var formatted []byte
@@ -70,14 +69,26 @@ func EncodeDnsName(DomainName string) []byte {
 }
 
 // max for this function: 65535
-func BuildDNSQuery(DomaineName, RecordType string) {
+func BuildDNSQuery(DomaineName, RecordType string) string {
 	name := EncodeDnsName(DomaineName)
-	var id int
+	var id uint16
 
 	for n := 0; n < 65535; n++ {
-		id = rand.Intn(0)
+		id = uint16(rand.Intn(65534))
 	}
-	fmt.Println(name, id)
+	recursionDesired := 1 << 8
+	header := DNSHeader{
+		ID:                id,
+		NumberOfQuestions: 1,
+		Flags:             uint16(recursionDesired),
+	}
+	question := DNSQuestion{
+		Name:  string(name),
+		Type_: TYPE_A,
+		Class: CLASS_IN,
+	}
+	return header.HeaderToBytes(DNSHeaderSize) + string(question.QuestionToBytes(12))
+
 }
 
 func Main() int {
@@ -97,9 +108,10 @@ func Main() int {
 		Class: 1, // IN class
 	}
 	// chose 5 because it is the minimal length of a DNS resolver Question
-	fmt.Println(q.QuestionToBytes(5))
+	fmt.Println("question to bytes", q.QuestionToBytes(5))
 
-	fmt.Println(EncodeDnsName("google.com"))
+	fmt.Println("Encoded name", EncodeDnsName("google.com"))
+	fmt.Println("Building the query", BuildDNSQuery("google.com", "1"))
 
 	return 0
 }
