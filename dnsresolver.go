@@ -74,7 +74,7 @@ func BuildDNSQuery(DomaineName, RecordType string) string {
 	var id uint16
 
 	for n := 0; n < 65535; n++ {
-		id = uint16(rand.Intn(65534))
+		id = uint16(rand.Intn(65535))
 	}
 	recursionDesired := 1 << 8
 	header := DNSHeader{
@@ -110,8 +110,8 @@ func Main() int {
 	// chose 5 because it is the minimal length of a DNS resolver Question
 	fmt.Println("question to bytes", q.QuestionToBytes(5))
 
-	fmt.Println("Encoded name", EncodeDnsName("google.com"))
-	fmt.Println("Building the query", BuildDNSQuery("google.com", "1"))
+	fmt.Println("Encoded name", EncodeDnsName("example.com"))
+	fmt.Println("Building the query", BuildDNSQuery("example.com", "1"))
 
 	return 0
 }
