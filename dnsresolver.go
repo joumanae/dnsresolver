@@ -27,10 +27,17 @@ type DNSQuestion struct {
 	Class uint16
 }
 
-func (h *DNSHeader) HeaderToBytes(size int) string {
+type DNSRecord struct {
+	Name  string
+	Type  uint16
+	Class uint16
+	TTL   uint32
+	Data  string
+}
+
+func (h *DNSHeader) HeaderToBytesToHexadecimal(size int) string {
 	headerSlice := make([]byte, DNSHeaderSize)
 	var formatted []byte
-	// is it better to write v >> 8 ??
 	// BigEndian saves the most significant piece of data at the lowest in memory
 	// Endian is useful when data isn't single-byte. In our case, each element is multiple bytes
 	binary.BigEndian.PutUint16(headerSlice[0:2], h.ID)
@@ -46,7 +53,6 @@ func (h *DNSHeader) HeaderToBytes(size int) string {
 	return string(formatted)
 }
 
-// What should be the format of QuestionToBytes?
 func (q *DNSQuestion) QuestionToBytes(size int) []byte {
 
 	questionSlice := []byte(q.Name)
@@ -87,7 +93,11 @@ func BuildDNSQuery(DomaineName, RecordType string) string {
 		Type_: TYPE_A,
 		Class: CLASS_IN,
 	}
-	return header.HeaderToBytes(DNSHeaderSize) + string(question.QuestionToBytes(12))
+	return header.HeaderToBytesToHexadecimal(DNSHeaderSize) + string(question.QuestionToBytes(12))
+
+}
+
+func (r *DNSRecord) ParseDNSHeader([]byte) {
 
 }
 
@@ -100,18 +110,18 @@ func Main() int {
 		NumberOfAuthorities: 0,
 		NumberOfAdditionals: 0,
 	}
-	fmt.Println(h.HeaderToBytes(DNSHeaderSize))
+	fmt.Println(h.HeaderToBytesToHexadecimal(DNSHeaderSize))
 	// Example usage
 	q := DNSQuestion{
-		Name:  "example.com",
+		Name:  "bitfieldconsulting.com",
 		Type_: 1, // A record
 		Class: 1, // IN class
 	}
 	// chose 5 because it is the minimal length of a DNS resolver Question
 	fmt.Println("question to bytes", q.QuestionToBytes(5))
 
-	fmt.Println("Encoded name", EncodeDnsName("example.com"))
-	fmt.Println("Building the query", BuildDNSQuery("example.com", "1"))
+	fmt.Println("Encoded name", EncodeDnsName("bitfieldconsulting.com"))
+	fmt.Println("Building the query", BuildDNSQuery("bitfieldconsulting.com", "1"))
 
 	return 0
 }
