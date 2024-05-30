@@ -3,8 +3,10 @@ package dnsresolver
 import (
 	"bytes"
 	"encoding/binary"
+	"flag"
 	"fmt"
 	"math/rand"
+	"os"
 )
 
 const TYPE_A = 1
@@ -102,6 +104,12 @@ func (r *DNSRecord) ParseDNSHeader([]byte) {
 }
 
 func Main() int {
+	url := flag.String("url", "", "url to resolve")
+	flag.Parse()
+	if len(os.Args) < 2 {
+		fmt.Println("Please provide a url")
+		return 0
+	}
 	h := DNSHeader{
 		ID:                  0x1314,
 		Flags:               0,
@@ -110,18 +118,16 @@ func Main() int {
 		NumberOfAuthorities: 0,
 		NumberOfAdditionals: 0,
 	}
-	fmt.Println(h.HeaderToBytesToHexadecimal(DNSHeaderSize))
+	h.HeaderToBytesToHexadecimal(DNSHeaderSize)
 	// Example usage
 	q := DNSQuestion{
-		Name:  "bitfieldconsulting.com",
+		Name:  *url,
 		Type_: 1, // A record
 		Class: 1, // IN class
 	}
 	// chose 5 because it is the minimal length of a DNS resolver Question
 	fmt.Println("question to bytes", q.QuestionToBytes(5))
-
-	fmt.Println("Encoded name", EncodeDnsName("bitfieldconsulting.com"))
-	fmt.Println("Building the query", BuildDNSQuery("bitfieldconsulting.com", "1"))
+	fmt.Println("Building the query", BuildDNSQuery(*url, "1"), len(BuildDNSQuery("example.com", "1")))
 
 	return 0
 }

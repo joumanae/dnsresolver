@@ -1,0 +1,4 @@
+exec dnsresolver 
+stdout 'Please provide a url'
+exec dnsresolver example.com
+stdout 'question'
