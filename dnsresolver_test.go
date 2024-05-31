@@ -19,6 +19,7 @@ func TestHeaderToBytesReturnsCorrectFormat(t *testing.T) {
 		t.Fatalf("the dns resolver gave back an incorrect header. want %v, got %v", want, got)
 	}
 }
+
 func TestQuestionToBytes(t *testing.T) {
 	// Create a DNSQuestion instance
 	question := dnsresolver.DNSQuestion{
@@ -52,7 +53,21 @@ func TestEncodeDnsName(t *testing.T) {
 	}
 }
 
-func TestBuildDNSQuery(t *testing.T) {
+func TestBuildDNSQueryHeader_ReturnsCorrectHeader(t *testing.T) {
+	t.Parallel()
+	header := dnsresolver.BuildDNSQueryHeader()
+	if header.ID == 0 {
+		t.Fatal("header ID should not be zero")
+	}
+	if header.NumberOfQuestions != 1 {
+		t.Fatalf("number of questions should be 1, got %d", header.NumberOfQuestions)
+	}
+	if header.Flags&0b0000000_100000000 == 0 {
+		t.Fatalf("recursionDesired flag should be set")
+	}
+}
+
+func TestBuildDNSQuery_ReturnsCorrectString(t *testing.T) {
 	// Create a domain name
 	domainName := "example.com"
 	// Create a record type
