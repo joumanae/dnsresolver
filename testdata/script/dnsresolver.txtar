@@ -1,4 +1,4 @@
-exec dnsresolver 
-stdout 'Please provide a url'
+exec dnsresolver
+stderr 'Please provide a url'
 exec dnsresolver example.com
-stdout 'question'
+stdout 'Query'

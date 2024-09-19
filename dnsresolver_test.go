@@ -14,9 +14,9 @@ import (
 func TestHeaderToBytesReturnsCorrectFormat(t *testing.T) {
 
 	got := dnsresolver.BuildDNSQueryHeader().ToBytes()
-	want := []byte{0x45, 0x66, 0x1, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}
+	want := []byte{0x1, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}
 
-	if !slices.Equal(want, got) {
+	if !slices.Equal(want, got[2:]) {
 		t.Fatalf("the dns resolver gave back an incorrect header. want %v, got %v", want, got)
 	}
 }

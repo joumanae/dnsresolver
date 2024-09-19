@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
 	"math/rand"
 	"net"
 	"os"
@@ -32,7 +33,7 @@ type DNSQuery struct {
 }
 
 type DNSRecord struct {
-	Name  string
+	Name  []byte
 	Type  uint16
 	Class uint16
 	TTL   uint32 // time to live
@@ -87,7 +88,7 @@ func BuildDNSQueryHeader() DNSHeader {
 	return DNSHeader{
 		ID:             uint16(rand.Intn(65535) + 1),
 		NumberOfQuerys: 1,
-		Flags:          1 << 8,
+		Flags:          1<<8 | 1<<7, // Set recursion desired (RD) bit
 	}
 }
 
@@ -124,17 +125,47 @@ func (r *DNSRecord) ParseDNSQuery([]byte) {
 	r.Type = q.Type_
 	r.Class = q.Class
 
-	r.Name = string(q.Name)
+	r.Name = q.Name
 	r.TTL = 0
 
 }
 
-// ParseDNSRecord takes a byte slice and parses it into a DNSRecord.
-// It then copies the fields from the parsed DNSRecord into the receiver.
-func (r *DNSRecord) ParseDNSRecord(b []byte) {
+func ParseRecord(r io.Reader) (DNSRecord, error) {
 	rec := DNSRecord{}
-	// The following line is a placeholder until we implement the actual parsing of the DNSRecord
-	fmt.Println(rec)
+	var nameLen byte
+	for {
+		if err := binary.Read(r, binary.BigEndian, &nameLen); err != nil {
+			return rec, err
+		}
+		if nameLen == 0 {
+			break
+		}
+		name := make([]byte, nameLen)
+		_, err := io.ReadFull(r, name)
+		if err != nil {
+			return rec, err
+		}
+		rec.Name = append(rec.Name, name...)
+		rec.Name = append(rec.Name, byte('.'))
+	}
+	if err := binary.Read(r, binary.BigEndian, &rec.Type); err != nil {
+		return rec, err
+	}
+	if err := binary.Read(r, binary.BigEndian, &rec.Class); err != nil {
+		return rec, err
+	}
+	if err := binary.Read(r, binary.BigEndian, &rec.TTL); err != nil {
+		return rec, err
+	}
+	if err := binary.Read(r, binary.BigEndian, &rec.RDLen); err != nil {
+		return rec, err
+	}
+	var addr [4]byte
+	if err := binary.Read(r, binary.BigEndian, &addr); err != nil {
+		return rec, err
+	}
+	rec.RData = addr[:]
+	return rec, nil
 }
 
 func Main() int {
@@ -143,7 +174,9 @@ func Main() int {
 		return 0
 	}
 	header := BuildDNSQueryHeader()
+	fmt.Printf("Query header: %#v\n", header)
 	query := BuildDNSQuery(os.Args[1])
+	fmt.Printf("Query:\n\tName: %q\n\tType: %x\n\tClass: %x\n", query.Name, query.Type_, query.Class)
 	message := append(header.ToBytes(), query.ToBytes()...)
 	conn, err := net.Dial("udp", "1.1.1.1:53")
 	if err != nil {
@@ -151,25 +184,32 @@ func Main() int {
 		return 1
 	}
 	defer conn.Close()
-	buf := make([]byte, 12)
+	buf := make([]byte, 104)
 	w, err := conn.Write(message)
 	if err != nil {
 		fmt.Println(err)
 		return 1
 	}
 	fmt.Printf("wrote %d bytes\n", w)
-	n, err := conn.Read(buf)
+	_, err = conn.Read(buf)
 	if err != nil {
 		fmt.Println(err)
 		return 1
 	}
-	header, err = ParseHeader(bytes.NewReader(buf))
+	fmt.Printf("data: %#v\n", buf)
+	resp := bytes.NewReader(buf)
+	header, err = ParseHeader(resp)
 	if err != nil {
 		fmt.Println(err)
 		return 1
 	}
 	fmt.Printf("header: %#v\n", header)
-
-	fmt.Printf("read %d bytes, bytes:%#v\n", n, buf)
+	record, err := ParseRecord(resp)
+	if err != nil {
+		fmt.Println(err)
+		return 1
+	}
+	fmt.Printf("name: %q\n", record.Name)
+	fmt.Printf("record: %#v\n", record)
 	return 0
 }
