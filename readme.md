@@ -13,9 +13,12 @@ How DNS works under the hood (what’s happening behind the scenes when you make
 Other goal: writing under 200 lines of code for this, compared to the original Python project by Julia Evans. 
 
 	// Example usage
-	q := DNSQuestion{
+	q := DNSQuery{
 		Name:  domain,
 		Type_: 1, // A record
 		Class: 1, // IN class
 	}
     
+	// fix my test 
+	// TODO: send my query to an actual server 
+	//TODO: Read again what DNS is supposed to do
