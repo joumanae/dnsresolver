@@ -196,7 +196,7 @@ func Main() int {
 		fmt.Println(err)
 		return 1
 	}
-	fmt.Printf("data: %#v\n", buf)
+	//fmt.Printf("data: %#q\n", buf)
 	resp := bytes.NewReader(buf)
 	header, err = ParseHeader(resp)
 	if err != nil {
@@ -210,6 +210,18 @@ func Main() int {
 		return 1
 	}
 	fmt.Printf("name: %q\n", record.Name)
-	fmt.Printf("record: %#v\n", record)
+	if record.Type == 1 {
+		fmt.Printf("type: A\n")
+	} else {
+		fmt.Printf("type: %d\n", record.Type)
+	}
+	if record.Class == 1 {
+		if i := 0; i < len(record.RData)-1 {
+			// Assuming record.RData contains byte values for an IP address.
+			ipAddress := fmt.Sprintf("%d.%d.%d.%d", record.RData[0], record.RData[1], record.RData[2], record.RData[3])
+			fmt.Printf("IP Address (IPv4): %s\n", ipAddress)
+		}
+	}
+
 	return 0
 }
